@@ -35,13 +35,21 @@ uv pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url ht
 
 # additional packages
 uv pip install opencv-python omegaconf hydra-core pynput transforms3d ipdb joycon-python hid pyglm loop-rate-limiters mink
+
+# install cuRobo
+cd curobo
+uv pip install -e . --no-build-isolation
+cd ..
 ```
 
 ---
 
-## RTX 5090 & Remote Development
+## Specialized Setup & Remote Development
 
-For setup specific to **NVIDIA Blackwell (RTX 5090)** GPUs or remote headless development, please refer to the [Remote Development Guide](REMOTE_DEVELOPMENT.md).
+For instructions on hardware or environment-specific configurations, see the following guides:
+
+- **RTX 5090 (Blackwell)**: [Blackwell Setup Guide](BLACKWELL_SETUP.md)
+- **Remote Headless Development**: [Remote Development Guide](REMOTE_DEVELOPMENT.md)
 
 ---
 

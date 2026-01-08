@@ -228,7 +228,8 @@ class ClothEnvARXV1:
             self.cloth_solver.collision.radius = 3.5e-3
 
         self.viewer.set_model(self.model)
-        self.viewer.set_camera(pos=wp.vec3((1.5, 0.0, 0.75)), pitch=-30, yaw=180)  # x: left-right, y: forward-backward, z: up-down
+        camera_pos = self.cfg.env.get("camera_pos", [1.5, 0.0, 0.75])
+        self.viewer.set_camera(pos=wp.vec3(*camera_pos), pitch=-30, yaw=180)  # x: left-right, y: forward-backward, z: up-down
 
         # create Warp arrays for gravity so we can swap Model.gravity during
         # a simulation running under CUDA graph capture

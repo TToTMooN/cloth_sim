@@ -39,6 +39,12 @@ uv pip install opencv-python omegaconf hydra-core pynput transforms3d ipdb joyco
 
 ---
 
+## RTX 5090 & Remote Development
+
+For setup specific to **NVIDIA Blackwell (RTX 5090)** GPUs or remote headless development, please refer to the [Remote Development Guide](REMOTE_DEVELOPMENT.md).
+
+---
+
 ## Usage
 
 ```

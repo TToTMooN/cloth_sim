@@ -4,3 +4,7 @@ num_frames: 1000
 headless: False
 use_graph: True
 planner: diffik
+output_path: null
+width: 1920
+height: 1080
+camera_pos: [1.8, 0.0, 0.9]

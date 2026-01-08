@@ -25,7 +25,11 @@ class ReachEnv:
         cfg = self.cfg
 
         if cfg.env.viewer == "gl":
-            viewer = newton.viewer.ViewerGL(headless=cfg.env.headless)
+            viewer = newton.viewer.ViewerGL(
+                width=cfg.env.get("width", 1920),
+                height=cfg.env.get("height", 1080),
+                headless=cfg.env.headless
+            )
         elif cfg.env.viewer == "usd":
             if cfg.env.output_path is None:
                 raise ValueError("--output-path is required when using usd viewer")

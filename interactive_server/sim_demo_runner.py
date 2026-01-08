@@ -1,12 +1,23 @@
 from __future__ import annotations
 
+import os
+import sys
 import threading
 import time
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
 
 from interactive_server.frame_broker import FrameBroker
+
+# Add relevant paths for simulation components
+ROOT_DIR = Path(__file__).parents[1]
+sys.path.append(str(ROOT_DIR))
+sys.path.append(str(ROOT_DIR / "newton"))
+
+# Force pyglet headless mode for remote sim
+os.environ["PYGLET_HEADLESS"] = "1"
 
 
 class DemoRunner:
@@ -45,14 +56,15 @@ class DemoRunner:
             time.sleep(1 / self._fps)
 
     def _run_simulation(self) -> None:
-        from omegaconf import OmegaConf
+        from hydra import compose, initialize
         import warp as wp
         import newton.viewer
         from sim.env.cloth_env_ARX import ClothEnvARXV1
 
-        cfg = OmegaConf.load("cfg/default.yaml")
-        cfg.env.viewer = "gl"
-        cfg.env.headless = True
+        # Correct config loading via Hydra composition
+        with initialize(version_base="1.2", config_path="../cfg"):
+            cfg = compose(config_name="default", overrides=["env.headless=True", "env.viewer=gl"])
+        
         viewer = newton.viewer.ViewerGL(headless=True)
         env = ClothEnvARXV1(cfg=cfg, viewer=viewer)
 
@@ -80,11 +92,14 @@ class DemoRunner:
 
     @staticmethod
     def _extract_frame(viewer) -> Optional[np.ndarray]:
+        import warp as wp
         for attr in ("capture_frame", "get_frame", "read_frame", "get_image"):
             if hasattr(viewer, attr):
                 frame = getattr(viewer, attr)()
                 if isinstance(frame, np.ndarray):
                     return frame
+                if isinstance(frame, wp.array):
+                    return frame.numpy()
         return None
 
 

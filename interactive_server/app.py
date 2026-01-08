@@ -6,6 +6,7 @@ from typing import Dict
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from interactive_server.frame_broker import FrameBroker
@@ -33,6 +34,8 @@ session_manager = SessionManager(ttl_seconds=30.0)
 peer_connections: Dict[str, RTCPeerConnection] = {}
 frame_broker = FrameBroker()
 demo_runner = DemoRunner(frame_broker)
+
+app.mount("/website", StaticFiles(directory="interactive_server/website"), name="website")
 
 
 @app.on_event("startup")

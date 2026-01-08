@@ -2,7 +2,6 @@ import os
 import subprocess
 import time
 from datetime import datetime
-from pathlib import Path
 
 def record_simulation(output_dir="outputs/videos", record_time=20, resolution="1920x1080"):
     """

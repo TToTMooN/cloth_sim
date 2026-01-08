@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cloth Simulation Interactive Demo</title>
+    <link rel="stylesheet" href="interactive.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="page__header">
+        <h1>Interactive Cloth Simulation</h1>
+        <p>
+          Connect to the live simulation. Only one participant can control the scene at a time, with a 30&nbsp;second limit.
+        </p>
+      </header>
+
+      <section class="panel">
+        <div class="panel__controls">
+          <label class="control">
+            <span>Server URL</span>
+            <input id="server-url" type="text" value="http://localhost:8000" />
+          </label>
+          <button id="connect" class="primary">Connect</button>
+          <button id="disconnect" class="secondary" disabled>Disconnect</button>
+        </div>
+        <div class="panel__status">
+          <div id="status" class="status">Not connected</div>
+          <div id="timer" class="timer"></div>
+        </div>
+      </section>
+
+      <section class="stream">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="stream__hint">
+          <p>When you are the active controller, use the mouse or keyboard to send inputs.</p>
+        </div>
+      </section>
+
+      <section class="panel panel--light">
+        <h2>How it works</h2>
+        <ul>
+          <li>When you connect, you either get control immediately or join a queue.</li>
+          <li>Each controller session lasts 30 seconds, then the next person takes over.</li>
+          <li>Control inputs are sent over a WebSocket channel to the simulation server.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="interactive.js"></script>
+  </body>
+</html>

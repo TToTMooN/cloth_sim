@@ -5,7 +5,10 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+ 
+if TYPE_CHECKING:
+    from interactive_server.state import SessionManager
 
 import numpy as np
 
@@ -21,11 +24,18 @@ os.environ["PYGLET_HEADLESS"] = "1"
 
 
 class DemoRunner:
-    def __init__(self, broker: FrameBroker, fps: int = 30) -> None:
+    def __init__(self, broker: FrameBroker, session_manager: 'SessionManager', fps: int = 30) -> None:
         self._broker = broker
-        self._fps = fps
+        self._session_manager = session_manager
+        self._fps = 60
         self._stop_event = threading.Event()
-        self._thread: Optional[threading.Thread] = None
+        self._thread = None
+        
+        # Interactive state
+        self._is_replaying = False # Default to manual control
+        self._current_target = None
+        self._last_error = None
+        self._restart_count = 0
 
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
@@ -39,10 +49,26 @@ class DemoRunner:
             self._thread.join(timeout=2)
 
     def _run(self) -> None:
-        try:
-            self._run_simulation()
-        except Exception:
-            self._run_placeholder()
+        while not self._stop_event.is_set():
+            try:
+                self._last_error = None
+                self._run_simulation()
+            except Exception as e:
+                import traceback
+                self._last_error = str(e)
+                self._restart_count += 1
+                print(f"Simulation error (Attempt {self._restart_count}): {e}")
+                traceback.print_exc()
+                
+                # Update session manager with error if possible
+                # (We'll assume the status poll can pick this up via a new property)
+                
+                if self._stop_event.is_set():
+                    break
+                
+                # Brief wait before restart
+                time.sleep(2)
+                print("Restarting simulation...")
 
     def _run_placeholder(self) -> None:
         base = 0
@@ -70,18 +96,53 @@ class DemoRunner:
 
         targets = _demo_targets()
         target_idx = 0
-        target = targets[target_idx, :-1].copy()
         to_target_time = targets[target_idx, -1]
+        
+        # Simple initialization from first demo target to avoid faults
+        self._current_target = targets[0, :-1].copy()
+
+        if self._is_replaying:
+            # (redundant but safe if we change default)
+            self._current_target = targets[0, :-1].copy()
 
         while not self._stop_event.is_set() and env.viewer.is_running():
+            inputs = self._session_manager.get_controller_inputs(consume_commands=True)
+            
+            # Handle commands
+            if inputs and inputs.get("commands"):
+                for cmd in inputs["commands"]:
+                    if cmd == "toggle_replay":
+                        self._is_replaying = not self._is_replaying
+                        if self._is_replaying:
+                            # Reset environment when switching to replay
+                            env.reset()
+                            target_idx = 0
+                            self._current_target = targets[target_idx, :-1].copy()
+                            to_target_time = targets[target_idx, -1]
+                        else:
+                            # When switching to manual, stop and let people take control
+                            # We keep the current target where it is
+                            pass
+            
+            if self._is_replaying:
+                # Demo Replay Mode
+                if env.sim_time > to_target_time and target_idx < (targets.shape[0] - 1):
+                    target_idx += 1
+                    self._current_target = targets[target_idx, :-1].copy()
+                    to_target_time += targets[target_idx, -1]
+                elif target_idx >= (targets.shape[0] - 1) and env.sim_time > to_target_time:
+                    # Loop demo
+                    target_idx = 0
+                    self._current_target = targets[target_idx, :-1].copy()
+                    to_target_time = env.sim_time + targets[target_idx, -1]
+            else:
+                # Interactive Mode
+                if inputs:
+                    self._update_target_from_inputs(inputs)
+
             if not env.viewer.is_paused():
                 with wp.ScopedTimer("step", active=False):
-                    env.step({"target": target})
-
-            if env.sim_time > to_target_time and target_idx < (targets.shape[0] - 1):
-                target_idx += 1
-                target = targets[target_idx, :-1].copy()
-                to_target_time += targets[target_idx, -1]
+                    env.step({"target": self._current_target})
 
             with wp.ScopedTimer("render", active=False):
                 env.render()
@@ -89,6 +150,46 @@ class DemoRunner:
             if frame is not None:
                 self._broker.submit_frame(frame)
             time.sleep(1 / self._fps)
+
+    def _update_target_from_inputs(self, inputs: dict) -> None:
+        keys = inputs.get("keys", [])
+        delta = 0.01
+        
+        # Left Arm (Index 0-7)
+        if 'w' in keys:
+            self._current_target[0] += delta
+        if 's' in keys:
+            self._current_target[0] -= delta
+        if 'a' in keys:
+            self._current_target[1] -= delta
+        if 'd' in keys:
+            self._current_target[1] += delta
+        if 'r' in keys:
+            self._current_target[2] += delta
+        if 'f' in keys:
+            self._current_target[2] -= delta
+        if 'c' in keys:
+            self._current_target[7] = 0.04 # Open
+        if 'v' in keys:
+            self._current_target[7] = 0.01 # Close
+        
+        # Right Arm (Index 8-15)
+        if 'i' in keys:
+            self._current_target[8] += delta
+        if 'k' in keys:
+            self._current_target[8] -= delta
+        if 'j' in keys:
+            self._current_target[9] -= delta
+        if 'l' in keys:
+            self._current_target[9] += delta
+        if 'p' in keys:
+            self._current_target[10] += delta
+        if ';' in keys:
+            self._current_target[10] -= delta
+        if '.' in keys:
+            self._current_target[15] = 0.04 # Open
+        if ',' in keys:
+            self._current_target[15] = 0.01 # Close
 
     @staticmethod
     def _extract_frame(viewer) -> Optional[np.ndarray]:

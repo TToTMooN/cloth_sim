@@ -569,6 +569,21 @@ class ClothEnvARXV1:
 
         self.sim_time += self.frame_dt
 
+    def reset(self):
+        self.state_0.joint_q.assign(self.model.joint_q)
+        self.state_0.joint_qd.zero_()
+        self.state_0.particle_q.assign(self.model.particle_q)
+        self.state_0.particle_qd.zero_()
+        
+        self.state_1.joint_q.assign(self.model.joint_q)
+        self.state_1.joint_qd.zero_()
+        self.state_1.particle_q.assign(self.model.particle_q)
+        self.state_1.particle_qd.zero_()
+        
+        self.sim_time = 0.0
+        self.plan_step = 0
+        self.prev_target = None
+
     def simulate(self):
         if self.add_cloth:
             self.cloth_solver.rebuild_bvh(self.state_0)

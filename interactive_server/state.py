@@ -5,7 +5,8 @@ from collections import deque
 from dataclasses import dataclass
 import time
 import uuid
-from typing import Deque, Dict, Optional
+import threading
+from typing import Deque, Dict, Optional, Set
 
 
 @dataclass
@@ -14,6 +15,57 @@ class Session:
     status: str
     created_at: float
     expires_at_monotonic: Optional[float] = None
+    input_state: InputState = None
+
+    def __post_init__(self):
+        if self.input_state is None:
+            self.input_state = InputState()
+
+
+class InputState:
+    def __init__(self):
+        self.keys: Set[str] = set()
+        self.mouse_x: float = 0.0
+        self.mouse_y: float = 0.0
+        self.mouse_button: Optional[int] = None
+        self.commands: Deque[str] = deque(maxlen=10)
+        self._lock = threading.Lock()
+
+    def update_from_payload(self, payload: dict):
+        with self._lock:
+            ptype = payload.get("type")
+            if ptype == "keydown":
+                key = payload.get("key")
+                if key:
+                    self.keys.add(key)
+            elif ptype == "keyup":
+                key = payload.get("key")
+                if key:
+                    self.keys.discard(key)
+            elif ptype == "mousemove":
+                self.mouse_x = payload.get("x", 0.0)
+                self.mouse_y = payload.get("y", 0.0)
+            elif ptype == "mousedown":
+                self.mouse_button = payload.get("button")
+            elif ptype == "mouseup":
+                self.mouse_button = None
+            elif ptype == "command":
+                cmd = payload.get("command")
+                if cmd:
+                    self.commands.append(cmd)
+
+    def get_snapshot(self) -> dict:
+        with self._lock:
+            return {
+                "keys": set(self.keys),
+                "mouse": (self.mouse_x, self.mouse_y),
+                "button": self.mouse_button,
+                "commands": list(self.commands),
+            }
+
+    def clear_commands(self):
+        with self._lock:
+            self.commands.clear()
 
 
 @dataclass
@@ -73,7 +125,19 @@ class SessionManager:
                 return
             if session.status != "controller":
                 return
-            session.created_at = session.created_at
+            session.input_state.update_from_payload(payload)
+
+    def get_controller_inputs(self, consume_commands: bool = False) -> Optional[dict]:
+        """Thread-safe way for DemoRunner to get current inputs."""
+        if self._controller_id is None:
+            return None
+        session = self._sessions.get(self._controller_id)
+        if session and session.status == "controller":
+            snapshot = session.input_state.get_snapshot()
+            if consume_commands:
+                session.input_state.clear_commands()
+            return snapshot
+        return None
 
     def _queue_position(self, session_id: str) -> Optional[int]:
         for idx, queued_id in enumerate(self._queue, start=1):

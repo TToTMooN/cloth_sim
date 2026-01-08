@@ -11,7 +11,7 @@
       <header class="page__header">
         <h1>Interactive Cloth Simulation</h1>
         <p>
-          Connect to the live simulation. Only one participant can control the scene at a time, with a 30&nbsp;second limit.
+          Connect to the live simulation. Only one participant can control the scene at a time, with a 5&nbsp;minute limit.
         </p>
       </header>
 
@@ -23,6 +23,7 @@
           </label>
           <button id="connect" class="primary">Connect</button>
           <button id="disconnect" class="secondary" disabled>Disconnect</button>
+          <button id="toggle-replay" class="tertiary" disabled>Replay Demo</button>
         </div>
         <div class="panel__status">
           <div id="status" class="status">Not connected</div>
@@ -37,16 +38,106 @@
         </div>
       </section>
 
+      <section class="panel panel--controls" id="robot-controls" style="display: none;">
+        <div class="control-groups">
+          <div class="control-group">
+            <h3>Left Arm (W/A/S/D/R/F)</h3>
+            <div class="grid">
+              <button data-key="w">↑ X</button>
+              <button data-key="s">↓ X</button>
+              <button data-key="a">← Y</button>
+              <button data-key="d">→ Y</button>
+              <button data-key="r">↑ Z</button>
+              <button data-key="f">↓ Z</button>
+              <button data-key="c">Open Gripper</button>
+              <button data-key="v">Close Gripper</button>
+            </div>
+          </div>
+          <div class="control-group">
+            <h3>Right Arm (I/J/K/L/P/;)</h3>
+            <div class="grid">
+              <button data-key="i">↑ X</button>
+              <button data-key="k">↓ X</button>
+              <button data-key="j">← Y</button>
+              <button data-key="l">→ Y</button>
+              <button data-key="p">↑ Z</button>
+              <button data-key=";">↓ Z</button>
+              <button data-key=".">Open Gripper</button>
+              <button data-key=",">Close Gripper</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="panel panel--light">
         <h2>How it works</h2>
         <ul>
           <li>When you connect, you either get control immediately or join a queue.</li>
-          <li>Each controller session lasts 30 seconds, then the next person takes over.</li>
+          <li>Each controller session lasts 5 minutes, then the next person takes over.</li>
           <li>Control inputs are sent over a WebSocket channel to the simulation server.</li>
         </ul>
       </section>
     </main>
 
+    <div id="error-alert" class="error-alert" style="display: none;">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <span id="error-message">Simulation error occurred.</span>
+        <button id="error-close" class="error-close">Restarting...</button>
+      </div>
+    </div>
+    
+    <style>
+      .error-alert {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(220, 38, 38, 0.95);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        z-index: 10000;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slide-down 0.3s ease-out;
+      }
+    
+      .error-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+    
+      .error-icon {
+        font-size: 20px;
+      }
+    
+      .error-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: default;
+      }
+    
+      @keyframes slide-down {
+        from {
+          transform: translate(-50%, -40px);
+          opacity: 0;
+        }
+    
+        to {
+          transform: translate(-50%, 0);
+          opacity: 1;
+        }
+      }
+    </style>
     <script src="interactive.js"></script>
   </body>
 </html>

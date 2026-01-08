@@ -30,10 +30,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-session_manager = SessionManager(ttl_seconds=30.0)
+session_manager = SessionManager(ttl_seconds=300.0)
 peer_connections: Dict[str, RTCPeerConnection] = {}
 frame_broker = FrameBroker()
-demo_runner = DemoRunner(frame_broker)
+demo_runner = DemoRunner(frame_broker, session_manager)
 
 app.mount("/website", StaticFiles(directory="interactive_server/website"), name="website")
 
@@ -50,12 +50,26 @@ async def join_session() -> dict:
 
 
 @app.get("/api/session/{session_id}")
-async def session_status(session_id: str) -> dict:
+async def get_session_status(session_id: str):
+    import time
     try:
         snapshot = await session_manager.status(session_id)
-    except KeyError as exc:
-        raise HTTPException(status_code=404, detail="session not found") from exc
-    return asdict(snapshot)
+    except KeyError:
+        return {"status": "expired"}
+    
+    is_controller = await session_manager.is_controller(session_id)
+    
+    expires_in = None
+    if snapshot.expires_at:
+        expires_in = max(0.0, snapshot.expires_at - time.time())
+    
+    return {
+        "status": snapshot.status,
+        "role": "controller" if is_controller else "viewer",
+        "expires_in": expires_in,
+        "sim_error": demo_runner._last_error,
+        "restart_count": demo_runner._restart_count
+    }
 
 
 @app.post("/api/webrtc/offer")

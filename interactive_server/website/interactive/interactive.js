@@ -1,9 +1,11 @@
 const connectButton = document.getElementById("connect");
 const disconnectButton = document.getElementById("disconnect");
+const toggleReplayButton = document.getElementById("toggle-replay");
 const statusEl = document.getElementById("status");
 const timerEl = document.getElementById("timer");
 const videoEl = document.getElementById("video");
 const serverUrlInput = document.getElementById("server-url");
+const robotControlsEl = document.getElementById("robot-controls");
 
 let sessionId = null;
 let sessionStatus = null;
@@ -13,6 +15,7 @@ let controlSocket = null;
 let statusPoll = null;
 let timerInterval = null;
 let listenersReady = false;
+let isReplayMode = false;
 
 function setStatus(message) {
   statusEl.textContent = message;
@@ -56,22 +59,40 @@ async function fetchStatus() {
   applySessionStatus(data);
 }
 
+const errorAlert = document.getElementById("error-alert");
+const errorMessage = document.getElementById("error-message");
+
 function applySessionStatus(data) {
   sessionStatus = data.status;
   expiresAt = data.expires_at;
+
+  // Handle simulation errors
+  if (data.sim_error) {
+    errorAlert.style.display = "flex";
+    errorMessage.textContent = `Simulation error: ${data.sim_error}`;
+  } else {
+    errorAlert.style.display = "none";
+  }
+
   if (sessionStatus === "controller") {
     setStatus("You are controlling the simulation.");
+    robotControlsEl.style.display = "block";
+    toggleReplayButton.disabled = false;
     if (!controlSocket) {
       openControlSocket();
     }
-  } else if (sessionStatus === "queued") {
-    const position = data.queue_position ?? "?";
-    setStatus(`You are in the queue. Position: ${position}.`);
-  } else if (sessionStatus === "expired") {
-    setStatus("Your control slot expired. Reconnect to join the queue.");
-    closeControlSocket();
   } else {
-    setStatus("Session ready.");
+    robotControlsEl.style.display = "none";
+    toggleReplayButton.disabled = true;
+    if (sessionStatus === "queued") {
+      const position = data.queue_position ?? "?";
+      setStatus(`You are in the queue. Position: ${position}.`);
+    } else if (sessionStatus === "expired") {
+      setStatus("Your control slot expired. Reconnect to join the queue.");
+      closeControlSocket();
+    } else {
+      setStatus("Session ready.");
+    }
   }
 }
 
@@ -133,7 +154,18 @@ function setupInputListeners() {
     if (sessionStatus !== "controller") {
       return;
     }
-    sendControl({ type: "keydown", key: event.key, code: event.code });
+    // Prevent scrolling for game keys
+    if (["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.code)) {
+      event.preventDefault();
+    }
+    sendControl({ type: "keydown", key: event.key.toLowerCase(), code: event.code });
+  });
+
+  window.addEventListener("keyup", (event) => {
+    if (sessionStatus !== "controller") {
+      return;
+    }
+    sendControl({ type: "keyup", key: event.key.toLowerCase(), code: event.code });
   });
 
   videoEl.addEventListener("mousemove", (event) => {
@@ -151,6 +183,42 @@ function setupInputListeners() {
       return;
     }
     sendControl({ type: "mousedown", button: event.button });
+  });
+
+  videoEl.addEventListener("mouseup", (event) => {
+    if (sessionStatus !== "controller") {
+      return;
+    }
+    sendControl({ type: "mouseup", button: event.button });
+  });
+
+  // Button listeners
+  document.querySelectorAll(".grid button").forEach((btn) => {
+    const key = btn.getAttribute("data-key");
+    btn.addEventListener("mousedown", () => {
+      if (sessionStatus === "controller") {
+        sendControl({ type: "keydown", key: key });
+      }
+    });
+    btn.addEventListener("mouseup", () => {
+      if (sessionStatus === "controller") {
+        sendControl({ type: "keyup", key: key });
+      }
+    });
+    btn.addEventListener("mouseleave", () => {
+      if (sessionStatus === "controller") {
+        sendControl({ type: "keyup", key: key });
+      }
+    });
+  });
+
+  toggleReplayButton.addEventListener("click", () => {
+    if (sessionStatus === "controller") {
+      isReplayMode = !isReplayMode;
+      toggleReplayButton.textContent = isReplayMode ? "Manual Control" : "Replay Demo";
+      toggleReplayButton.classList.toggle("active", !isReplayMode);
+      sendControl({ type: "command", command: "toggle_replay" });
+    }
   });
 
   listenersReady = true;
@@ -178,6 +246,10 @@ function resetUI() {
   setStatus("Not connected");
   setTimer("");
   videoEl.srcObject = null;
+  robotControlsEl.style.display = "none";
+  toggleReplayButton.disabled = true;
+  toggleReplayButton.textContent = "Replay Demo";
+  isReplayMode = false;
 }
 
 async function connect() {

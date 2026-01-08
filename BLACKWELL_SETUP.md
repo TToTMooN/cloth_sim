@@ -21,16 +21,21 @@ The compiler components will be located within your virtual environment: `.venv/
 git submodule update --init --recursive
 ```
 
-When building `cuRobo` or other CUDA-dependent packages, set the following environment variables to target the RTX 5090 and use the internal compiler:
+### Installation Command
+Before installing, ensure build dependencies are present and exports are set to target Blackwell:
 
 ```bash
-# Target Compute Capability 12.0
-export TORCH_CUDA_ARCH_LIST="12.0"
+# 1. Install build dependencies
+uv pip install setuptools setuptools-scm wheel
 
-# Point to internal toolkit
+# 2. Set environment variables
+export TORCH_CUDA_ARCH_LIST="12.0"
 export CUDA_HOME=$(find .venv -name cu13 -type d)
 export PATH="$CUDA_HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$CUDA_HOME/lib:$LD_LIBRARY_PATH"
+
+# 3. Build and install in editable mode
+uv pip install -e . --no-build-isolation
 ```
 
 ## 4. Troubleshooting

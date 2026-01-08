@@ -7,9 +7,13 @@ This guide covers specialized workflows for running and visualizing simulations 
 Simulation frames often cannot be streamed directly over standard SSH/X11 connections. Use one of the following methods for remote viewing:
 
 ### A. Headless Video Recording
-Record simulation sequences to an `.mp4` file for later viewing:
+Record simulation sequences to an `.mp4` file for later viewing. This tool can wrap any simulation script:
 ```bash
-python -m sim.utils.record_video
+# Record default demo
+python3 scripts/record_sim.py
+
+# Record a specific experiment
+python3 scripts/record_sim.py scripts/my_experiment.py --time 30
 ```
 *Requires `xvfb` and `ffmpeg` installed on the host.*
 

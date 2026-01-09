@@ -23,7 +23,6 @@
           </label>
           <button id="connect" class="primary">Connect</button>
           <button id="disconnect" class="secondary" disabled>Disconnect</button>
-          <button id="toggle-replay" class="tertiary" disabled>Replay Demo</button>
         </div>
         <div class="panel__status">
           <div id="status" class="status">Not connected</div>
@@ -33,41 +32,61 @@
 
       <section class="stream">
         <video id="video" autoplay playsinline muted></video>
-        <div class="stream__hint">
-          <p>When you are the active controller, use the mouse or keyboard to send inputs.</p>
+        <div class="stream__overlays" id="robot-controls" style="display: none;">
+          <div class="overlay overlay--top">
+            <button id="toggle-replay" class="glass-button" disabled>Replay Demo</button>
+          </div>
+          
+          <div class="overlay overlay--middle">
+            <div class="overlay--left">
+              <div class="control-group">
+                <div class="grid">
+                  <button data-key="w" title="Move Forward (W)">W</button>
+                  <div class="grid-row">
+                    <button data-key="a" title="Move Left (A)">A</button>
+                    <button data-key="s" title="Move Backward (S)">S</button>
+                    <button data-key="d" title="Move Right (D)">D</button>
+                  </div>
+                  <div class="grid-row">
+                    <button data-key="r" title="Move Up (R)">R</button>
+                    <button data-key="f" title="Move Down (F)">F</button>
+                  </div>
+                  <div class="grid-row">
+                    <button data-key="c" class="wide">Open</button>
+                    <button data-key="v" class="wide">Close</button>
+                  </div>
+                  </div>
+                  <div class="group-label">Left Arm</div>
+                  </div>
+                  </div>
+<div class="overlay--right">
+              <div class="control-group">
+                <div class="grid">
+                  <button data-key="i" title="Move Forward (I)">I</button>
+                  <div class="grid-row">
+                    <button data-key="j" title="Move Left (J)">J</button>
+                    <button data-key="k" title="Move Backward (K)">K</button>
+                    <button data-key="l" title="Move Right (L)">L</button>
+                  </div>
+                  <div class="grid-row">
+                    <button data-key="p" title="Move Up (P)">P</button>
+                    <button data-key=";" title="Move Down (;)">;</button>
+                  </div>
+                  <div class="grid-row">
+                    <button data-key="." class="wide">Open</button>
+                    <button data-key="," class="wide">Close</button>
+                  </div>
+                  </div>
+                  <div class="group-label">Right Arm</div>
+                  </div>
+                  </div>
+                  </div>
+                  </div>
+<div class="stream__hint">
+  <p>When you are the active controller, use the mouse or keyboard to send inputs.</p>
         </div>
       </section>
 
-      <section class="panel panel--controls" id="robot-controls" style="display: none;">
-        <div class="control-groups">
-          <div class="control-group">
-            <h3>Left Arm (W/A/S/D/R/F)</h3>
-            <div class="grid">
-              <button data-key="w">↑ X</button>
-              <button data-key="s">↓ X</button>
-              <button data-key="a">← Y</button>
-              <button data-key="d">→ Y</button>
-              <button data-key="r">↑ Z</button>
-              <button data-key="f">↓ Z</button>
-              <button data-key="c">Open Gripper</button>
-              <button data-key="v">Close Gripper</button>
-            </div>
-          </div>
-          <div class="control-group">
-            <h3>Right Arm (I/J/K/L/P/;)</h3>
-            <div class="grid">
-              <button data-key="i">↑ X</button>
-              <button data-key="k">↓ X</button>
-              <button data-key="j">← Y</button>
-              <button data-key="l">→ Y</button>
-              <button data-key="p">↑ Z</button>
-              <button data-key=";">↓ Z</button>
-              <button data-key=".">Open Gripper</button>
-              <button data-key=",">Close Gripper</button>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <section class="panel panel--light">
         <h2>How it works</h2>

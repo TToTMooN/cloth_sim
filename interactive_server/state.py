@@ -178,6 +178,24 @@ class SessionManager:
             self._controller_id = None
             self._promote_next_if_needed()
 
+    async def leave(self, session_id: str) -> None:
+        async with self._lock:
+            if session_id in self._queue:
+                self._queue.remove(session_id)
+            
+            if self._controller_id == session_id:
+                self._controller_id = None
+                session = self._sessions.get(session_id)
+                if session:
+                    session.status = "expired"
+                    session.expires_at_monotonic = None
+                
+                expire_task = self._expire_tasks.pop(session_id, None)
+                if expire_task:
+                    expire_task.cancel()
+                
+                self._promote_next_if_needed()
+
     def _promote_next_if_needed(self) -> None:
         if self._controller_id is not None:
             session = self._sessions.get(self._controller_id)

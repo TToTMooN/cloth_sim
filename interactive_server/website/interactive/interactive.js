@@ -195,21 +195,43 @@ function setupInputListeners() {
   // Button listeners
   document.querySelectorAll(".grid button").forEach((btn) => {
     const key = btn.getAttribute("data-key");
-    btn.addEventListener("mousedown", () => {
+    const handleDown = () => {
       if (sessionStatus === "controller") {
         sendControl({ type: "keydown", key: key });
+        btn.classList.add("active");
       }
-    });
-    btn.addEventListener("mouseup", () => {
+    };
+    const handleUp = () => {
       if (sessionStatus === "controller") {
         sendControl({ type: "keyup", key: key });
+        btn.classList.remove("active");
       }
+    };
+
+    btn.addEventListener("mousedown", handleDown);
+    btn.addEventListener("mouseup", handleUp);
+    btn.addEventListener("mouseleave", handleUp);
+
+    // Support touch devices
+    btn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      handleDown();
     });
-    btn.addEventListener("mouseleave", () => {
-      if (sessionStatus === "controller") {
-        sendControl({ type: "keyup", key: key });
-      }
+    btn.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      handleUp();
     });
+  });
+
+  // Visual feedback for keyboard
+  window.addEventListener("keydown", (event) => {
+    const btn = document.querySelector(`.grid button[data-key="${event.key.toLowerCase()}"]`);
+    if (btn) btn.classList.add("active");
+  });
+
+  window.addEventListener("keyup", (event) => {
+    const btn = document.querySelector(`.grid button[data-key="${event.key.toLowerCase()}"]`);
+    if (btn) btn.classList.remove("active");
   });
 
   toggleReplayButton.addEventListener("click", () => {
@@ -271,6 +293,17 @@ async function connect() {
   }
 }
 
+async function leaveSession() {
+  if (!sessionId) return;
+  try {
+    await fetch(`${getServerBase()}/api/session/leave/${sessionId}`, {
+      method: "POST",
+    });
+  } catch (error) {
+    console.error("Failed to leave session:", error);
+  }
+}
+
 function disconnect() {
   if (statusPoll) {
     clearInterval(statusPoll);
@@ -285,6 +318,7 @@ function disconnect() {
     rtcPeer.close();
     rtcPeer = null;
   }
+  leaveSession();
   disconnectButton.disabled = true;
   resetUI();
 }
@@ -292,5 +326,11 @@ function disconnect() {
 connectButton.addEventListener("click", connect);
 
 disconnectButton.addEventListener("click", disconnect);
+
+window.addEventListener("beforeunload", () => {
+  if (sessionId) {
+    leaveSession();
+  }
+});
 
 resetUI();

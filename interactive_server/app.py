@@ -49,6 +49,12 @@ async def join_session() -> dict:
     return asdict(snapshot)
 
 
+@app.post("/api/session/leave/{session_id}")
+async def leave_session(session_id: str):
+    await session_manager.leave(session_id)
+    return {"status": "ok"}
+
+
 @app.get("/api/session/{session_id}")
 async def get_session_status(session_id: str):
     import time
